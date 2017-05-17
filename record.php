@@ -4,12 +4,23 @@ preg_match_all('/href="([^"]+.mp3)/i', file_get_contents('http://www.radiorecord
 set_time_limit(0);
 
 $dir = $_GET['dir'] ?? $argv[1] ?? __DIR__;
+$eol = !empty($argv) ? PHP_EOL : '<br>';
+$dirFiles = scandir($dir);
+$trackNames = [];
+
+foreach ($dirFiles as $dirFile) {
+    if ($dirFile != '.' && $dirFile != '..') {
+        $trackNames[mb_substr($dirFile, 4)] = mb_substr($dirFile, 0 ,4);
+    }
+}
 
 if(!empty($files)) {
     foreach ($files[1] as $file) {
         $file = trim($file);
-        $path = $dir . '/' . substr(str_replace('%20', ' ', basename($file)),4);
-        if (!file_exists($path)) {
+        $basename = urldecode(basename($file));
+        $path = $dir . '/' . $basename;
+        $trackName = mb_substr($basename, 4);
+        if (!isset($trackNames[$trackName])) {
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
@@ -23,11 +34,16 @@ if(!empty($files)) {
             $result = curl_exec($ch);
             curl_close($ch);
             fclose($fp);
-            echo $file . '<br>' . PHP_EOL;
+            echo $basename . $eol;
             if (filesize($path) < 1000) {
                 exit(file_get_contents($path));
             }
             sleep(rand(.4, 1.5));
+        } elseif ($trackNames[$trackName] != mb_substr($basename, 0, 4)) {
+            rename($trackNames[$trackName] . $trackName, $path);
+            echo $trackNames[$trackName] . $trackName . ' - ' . $basename . $eol;
+        } else {
+            echo $basename . ' skipped' . $eol;
         }
     }
 }

@@ -40,7 +40,7 @@ if(!empty($files)) {
             }
             sleep(rand(.4, 1.5));
         } elseif ($trackNames[$trackName] != mb_substr($basename, 0, 4)) {
-            rename($trackNames[$trackName] . $trackName, $path);
+            rename($dir . $trackNames[$trackName] . $trackName, $path);
             echo $trackNames[$trackName] . $trackName . ' - ' . $basename . $eol;
         } else {
             echo $basename . ' skipped' . $eol;

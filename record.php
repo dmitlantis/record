@@ -3,7 +3,7 @@
 preg_match_all('/href="([^"]+.mp3)/i', file_get_contents('http://www.radiorecord.ru/radio/top100/rr.txt'), $files);
 set_time_limit(0);
 
-$dir = $_GET['dir'] ?? $argv[1] ?? __DIR__;
+$dir = rtrim($_GET['dir'] ?? $argv[1] ?? __DIR__, '\\\/') . DIRECTORY_SEPARATOR;
 $eol = !empty($argv) ? PHP_EOL : '<br>';
 $dirFiles = scandir($dir);
 $trackNames = [];
@@ -15,11 +15,13 @@ foreach ($dirFiles as $dirFile) {
 }
 
 if(!empty($files)) {
+    $skipped = '';
     foreach ($files[1] as $file) {
         $file = trim($file);
         $basename = urldecode(basename($file));
-        $path = $dir . '/' . $basename;
+        $path = $dir . $basename;
         $trackName = mb_substr($basename, 4);
+        $newPosition = mb_substr($basename, 0, 4);
         if (!isset($trackNames[$trackName])) {
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
@@ -39,11 +41,12 @@ if(!empty($files)) {
                 exit(file_get_contents($path));
             }
             sleep(rand(.4, 1.5));
-        } elseif ($trackNames[$trackName] != mb_substr($basename, 0, 4)) {
+        } elseif ($trackNames[$trackName] != $newPosition) {
             rename($dir . $trackNames[$trackName] . $trackName, $path);
-            echo $trackNames[$trackName] . $trackName . ' - ' . $basename . $eol;
+            echo "$trackName: $trackNames[$trackName] -> $newPosition $eol";
         } else {
-            echo $basename . ' skipped' . $eol;
+            $skipped .= $basename . $eol;
         }
     }
+    echo $eol . 'Skipped:' . $eol . $skipped;
 }
